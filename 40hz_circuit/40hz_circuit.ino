@@ -1,5 +1,6 @@
 // Define the built-in LED pin. On most Arduino boards, this is pin 13.
 const int ledPin = LED_BUILTIN;
+int loopy = 0;
 
 void setup() {
   // Initialize the digital pin as an output.
@@ -15,4 +16,9 @@ void loop() {
   // to achieve a 40 Hz blinking frequency
   digitalWrite(ledPin, LOW); // Turn the LED off
   delay(22); // Wait for 22 milliseconds
+  loopy++;
+  if(loopy > 100){
+    delay(250);
+    loopy = 0;
+  }
 }
