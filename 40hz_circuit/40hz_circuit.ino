@@ -16,9 +16,4 @@ void loop() {
   // to achieve a 40 Hz blinking frequency
   digitalWrite(ledPin, LOW); // Turn the LED off
   delay(22); // Wait for 22 milliseconds
-  loopy++;
-  if(loopy > 100){
-    delay(250);
-    loopy = 0;
-  }
 }
