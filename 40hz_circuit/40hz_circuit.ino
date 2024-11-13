@@ -1,8 +1,8 @@
 // Define the built-in LED pin. On most Arduino boards, this is pin 13.
 const int ledPin = LED_BUILTIN;
 const int led2Pin = 14;
-const int MotorRedPin = 5;
-const int MotorBluePin = 4;
+//const int MotorRedPin = 5;
+//const int MotorBluePin = 4;
 int loopy = 0;
 
 void setup() {
