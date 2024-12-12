@@ -115,10 +115,9 @@ while True:
     pixels[:] = new_frame
     pixels.show()
 
-    # Faster cycling: shorter delay
-    time.sleep(random.uniform(0.05, 0.3))
+    #time.sleep(random.uniform(0.05, 0.3))
+    time.sleep(0.24)
 
-    # Update the resonance pattern index
     resonance_frequency += direction
 
     # If going up and surpass max_state, reverse direction
