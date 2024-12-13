@@ -6,7 +6,7 @@ import math
 
 PIXEL_PIN = board.A3
 NUM_PIXELS = 25
-pixels = neopixel.NeoPixel(PIXEL_PIN, NUM_PIXELS, brightness=0.5, auto_write=False)
+pixels = neopixel.NeoPixel(PIXEL_PIN, NUM_PIXELS, brightness=0.9, auto_write=False)
 
 # Modified color function to produce shades of green and occasionally a bit of red
 def colorwheel(pos):
@@ -19,9 +19,9 @@ def colorwheel(pos):
 
 # Parameters for the ripple effect
 center_x = 2
-center_y = 2
+center_y = 3
 wave_frequency = 0.4
-wave_speed = 0.04
+wave_speed = 0.09
 delay_secs = 0.022
 
 frame_count = 0
@@ -31,7 +31,7 @@ repeat_frames = 2
 
 # Timings for fade cycle
 normal_display_duration = 10.0  # seconds showing normal pattern
-fade_duration = 2             # seconds to fade out and to fade in
+fade_duration = 1             # seconds to fade out and to fade in
 full_cycle = normal_display_duration + fade_duration + fade_duration
 
 cycle_start_time = time.monotonic()
@@ -65,17 +65,17 @@ while True:
     # Determine the brightness factor based on where we are in the cycle:
     if t_in_cycle < normal_display_duration:
         # Full brightness phase
-        brightness_factor = 1.0
+        brightness_factor = 0.2
     elif t_in_cycle < normal_display_duration + fade_duration:
         # Fade out phase
         fade_progress = (t_in_cycle - normal_display_duration) / fade_duration
-        brightness_factor = 1.0 - fade_progress
+        brightness_factor = 0.2 - fade_progress
     else:
         # Fade in phase
         fade_progress = (t_in_cycle - (normal_display_duration + fade_duration)) / fade_duration
         brightness_factor = fade_progress
 
-    base_brightness = 0.5 * brightness_factor
+    base_brightness = 0.2 * brightness_factor
     pixels.brightness = base_brightness
 
     new_frame = []
