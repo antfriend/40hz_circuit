@@ -8,31 +8,30 @@ PIXEL_PIN = board.A3
 NUM_PIXELS = 25
 pixels = neopixel.NeoPixel(PIXEL_PIN, NUM_PIXELS, brightness=0.5, auto_write=False)
 
-# Standalone colorwheel function (no rainbowio needed)
+# Modified color function to produce shades of green and occasionally a bit of red
 def colorwheel(pos):
-    if pos < 85:
-        return (255 - pos * 3, pos * 3, 0)
-    elif pos < 170:
-        pos -= 85
-        return (0, 255 - pos * 3, pos * 3)
-    else:
-        pos -= 170
-        return (pos * 3, 0, 255 - pos * 3)
+    # pos in [0, 255]
+    # We'll create a varying green using a sinusoidal pattern and occasionally insert a red pixel
+    g = int((math.sin(pos * math.pi / 128) + 1) * 127.5)
+    if random.random() < 0.01:
+        return (255, 0, 0)  # Occasional red pixel
+    return (0, g, 0)
 
 # Parameters for the ripple effect
 center_x = 2
 center_y = 2
-wave_frequency = 0.5
-wave_speed = 0.02
+wave_frequency = 0.4
+wave_speed = 0.04
+delay_secs = 0.022
 
 frame_count = 0
 vertical_offset = 0
-repeat_frames = 1
-frame_delay = (0.02, 0.04)
+repeat_frames = 2
+
 
 # Timings for fade cycle
 normal_display_duration = 10.0  # seconds showing normal pattern
-fade_duration = 1.0             # seconds to fade out and to fade in
+fade_duration = 2             # seconds to fade out and to fade in
 full_cycle = normal_display_duration + fade_duration + fade_duration
 
 cycle_start_time = time.monotonic()
@@ -64,9 +63,6 @@ while True:
     t_in_cycle = (now - cycle_start_time) % full_cycle
 
     # Determine the brightness factor based on where we are in the cycle:
-    # 0 to normal_display_duration: full brightness
-    # normal_display_duration to normal_display_duration+fade_duration: fade out
-    # normal_display_duration+fade_duration to full_cycle: fade in
     if t_in_cycle < normal_display_duration:
         # Full brightness phase
         brightness_factor = 1.0
@@ -79,7 +75,6 @@ while True:
         fade_progress = (t_in_cycle - (normal_display_duration + fade_duration)) / fade_duration
         brightness_factor = fade_progress
 
-    # Base brightness for the effect (original code used up to 0.5)
     base_brightness = 0.5 * brightness_factor
     pixels.brightness = base_brightness
 
@@ -101,7 +96,7 @@ while True:
     for _ in range(repeat_frames):
         pixels[:] = blurred_frame
         pixels.show()
-        time.sleep(random.uniform(*frame_delay))
+        time.sleep(delay_secs)
 
     frame_count += 1
     vertical_offset += 1
