@@ -2,145 +2,106 @@ import time
 import board
 import neopixel
 import random
-
-resonate_1 = [
-    0,0,0,0,0,
-    0,0,0,0,0,
-    0,0,1,0,0,
-    0,0,0,0,0,
-    0,0,0,0,0,
-]
-
-resonate_2 = [
-    0,0,0,0,0,
-    0,0,1,0,0,
-    0,1,1,1,0,
-    0,0,1,0,0,
-    0,0,0,0,0,
-]
-
-resonate_3 = [
-    0,0,1,0,0,
-    0,1,1,1,0,
-    1,1,1,1,1,
-    0,1,1,1,0,
-    0,0,1,0,0,
-]
-
-resonate_4 = [
-    1,1,1,1,1,
-    1,1,1,1,1,
-    1,1,1,1,1,
-    1,1,1,1,1,
-    1,1,1,1,1,
-]
-
-resonate_range = [resonate_1, resonate_2, resonate_3, resonate_4]
+import math
 
 PIXEL_PIN = board.A3
 NUM_PIXELS = 25
 pixels = neopixel.NeoPixel(PIXEL_PIN, NUM_PIXELS, brightness=0.5, auto_write=False)
 
-# Base colors for main and opposite
-RED = (255, 0, 0)
-GREEN = (0, 255, 0)
+# Standalone colorwheel function (no rainbowio needed)
+def colorwheel(pos):
+    if pos < 85:
+        return (255 - pos * 3, pos * 3, 0)
+    elif pos < 170:
+        pos -= 85
+        return (0, 255 - pos * 3, pos * 3)
+    else:
+        pos -= 170
+        return (pos * 3, 0, 255 - pos * 3)
 
-def blend_colors(color1, color2, phase):
-    return (
-        int(color1[0] + (color2[0] - color1[0]) * phase),
-        int(color1[1] + (color2[1] - color1[1]) * phase),
-        int(color1[2] + (color2[2] - color1[2]) * phase)
-    )
-
-# Instead of instantly toggling dominant color, use a phase to transition:
-color_phase = 0.0
-phase_direction = 1  # 1 means heading towards green, -1 means heading towards red
-transition_frames = 40  # how many frames to fully transition between colors
-
-resonance_frequency = 0
-direction = 1
-max_state = random.randint(2,4)
+# Parameters for the ripple effect
+center_x = 2
+center_y = 2
+wave_frequency = 0.5
+wave_speed = 0.02
 
 frame_count = 0
-switch_interval = 80  # after 80 frames, reverse direction of phase
 vertical_offset = 0
+repeat_frames = 1
+frame_delay = (0.02, 0.04)
+
+# Timings for fade cycle
+normal_display_duration = 10.0  # seconds showing normal pattern
+fade_duration = 1.0             # seconds to fade out and to fade in
+full_cycle = normal_display_duration + fade_duration + fade_duration
+
 cycle_start_time = time.monotonic()
-black_interval = 10
+
+def blur_frame(frame, width=5, height=5):
+    blurred = [None]*(width*height)
+    for row in range(height):
+        for col in range(width):
+            r_tot = 0
+            g_tot = 0
+            b_tot = 0
+            count = 0
+            for dy in [-1, 0, 1]:
+                for dx in [-1, 0, 1]:
+                    nr = row + dy
+                    nc = col + dx
+                    if 0 <= nr < height and 0 <= nc < width:
+                        idx = nr*width + nc
+                        r, g, b = frame[idx]
+                        r_tot += r
+                        g_tot += g
+                        b_tot += b
+                        count += 1
+            blurred[row*width + col] = (r_tot//count, g_tot//count, b_tot//count)
+    return blurred
 
 while True:
     now = time.monotonic()
-    # Every 10 seconds, go black for 1 second
-    if now - cycle_start_time >= black_interval:
-        pixels.fill((0,0,0))
-        pixels.show()
-        time.sleep(1)
-        cycle_start_time = time.monotonic()
+    t_in_cycle = (now - cycle_start_time) % full_cycle
 
-    # Update the color_phase gradually
-    # Each frame, move color_phase slightly
-    color_phase += phase_direction * (1.0 / transition_frames)
-    # Clamp the phase between 0 and 1
-    if color_phase > 1.0:
-        color_phase = 1.0
-        phase_direction = -1  # start heading back to red
-    elif color_phase < 0.0:
-        color_phase = 0.0
-        phase_direction = 1   # start heading back to green
+    # Determine the brightness factor based on where we are in the cycle:
+    # 0 to normal_display_duration: full brightness
+    # normal_display_duration to normal_display_duration+fade_duration: fade out
+    # normal_display_duration+fade_duration to full_cycle: fade in
+    if t_in_cycle < normal_display_duration:
+        # Full brightness phase
+        brightness_factor = 1.0
+    elif t_in_cycle < normal_display_duration + fade_duration:
+        # Fade out phase
+        fade_progress = (t_in_cycle - normal_display_duration) / fade_duration
+        brightness_factor = 1.0 - fade_progress
+    else:
+        # Fade in phase
+        fade_progress = (t_in_cycle - (normal_display_duration + fade_duration)) / fade_duration
+        brightness_factor = fade_progress
 
-    # Occasionally pick a new max_state
-    if random.random() < 0.01:
-        max_state = random.randint(2,4)
-
-    resonator = resonate_range[resonance_frequency]
-
-    # Adjust brightness (0.1 to 0.5)
-    base_brightness = 0.1 + (resonance_frequency / (len(resonate_range)-1)) * 0.4
+    # Base brightness for the effect (original code used up to 0.5)
+    base_brightness = 0.5 * brightness_factor
     pixels.brightness = base_brightness
-
-    # Determine main and opposite color from the phase
-    # When color_phase = 0 => mainly red, opposite green
-    # When color_phase = 1 => mainly green, opposite red
-    main_base_color = blend_colors(RED, GREEN, color_phase)
-    opposite_base_color = blend_colors(GREEN, RED, color_phase)
 
     new_frame = []
     for row in range(5):
         for col in range(5):
             source_row = (row + vertical_offset) % 5
-            val = resonator[source_row*5 + col]
+            dx = source_row - center_y
+            dy = col - center_x
+            distance = math.sqrt(dx*dx + dy*dy)
 
-            # Flicker: randomly vary brightness a bit
-            def flicker(color):
-                factor = random.uniform(0.8, 1.0)
-                return (int(color[0]*factor), int(color[1]*factor), int(color[2]*factor))
-
-            if val == 1:
-                # Mostly main color with occasional opposite spark
-                color = flicker(main_base_color)
-                if random.randint(1, 20) == 1:
-                    color = flicker(opposite_base_color)
-            else:
-                # Mostly opposite color with occasional main spark
-                color = flicker(opposite_base_color)
-                if random.randint(1, 20) == 1:
-                    color = flicker(main_base_color)
-
+            wave = distance * wave_frequency - frame_count * wave_speed
+            hue = int((math.sin(wave) + 1) * 127)
+            color = colorwheel(hue)
             new_frame.append(color)
 
-    # Display each frame multiple times to slow down framerate
-    for _ in range(3):
-        pixels[:] = new_frame
-        pixels.show()
-        time.sleep(random.uniform(0.2, 0.4))
+    blurred_frame = blur_frame(new_frame)
 
-    # Update resonance pattern
-    resonance_frequency += direction
-    if direction == 1 and resonance_frequency > max_state:
-        resonance_frequency = max_state - 1
-        direction = -1
-    elif direction == -1 and resonance_frequency < 0:
-        resonance_frequency = 1
-        direction = 1
+    for _ in range(repeat_frames):
+        pixels[:] = blurred_frame
+        pixels.show()
+        time.sleep(random.uniform(*frame_delay))
 
     frame_count += 1
     vertical_offset += 1
