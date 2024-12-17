@@ -6,7 +6,7 @@ import math
 
 PIXEL_PIN = board.A3
 NUM_PIXELS = 25
-pixels = neopixel.NeoPixel(PIXEL_PIN, NUM_PIXELS, brightness=0.9, auto_write=False)
+pixels = neopixel.NeoPixel(PIXEL_PIN, NUM_PIXELS, brightness=0.1, auto_write=False)
 
 # Modified color function to produce shades of green and occasionally a bit of red
 def colorwheel(pos):
@@ -19,19 +19,19 @@ def colorwheel(pos):
 
 # Parameters for the ripple effect
 center_x = 2
-center_y = 3
-wave_frequency = 0.4
-wave_speed = 0.09
+center_y = 1
+wave_frequency = 40
+wave_speed = 0.42
 delay_secs = 0.022
 
 frame_count = 0
 vertical_offset = 0
-repeat_frames = 2
+repeat_frames = 4
 
 
 # Timings for fade cycle
-normal_display_duration = 10.0  # seconds showing normal pattern
-fade_duration = 1             # seconds to fade out and to fade in
+normal_display_duration = 30.0  # seconds showing normal pattern
+fade_duration = 0.1             # seconds to fade out and to fade in
 full_cycle = normal_display_duration + fade_duration + fade_duration
 
 cycle_start_time = time.monotonic()
